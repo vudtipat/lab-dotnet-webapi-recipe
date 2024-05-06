@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DemoWebApi.Data;
+using DemoWebApi.Models;
 using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -20,42 +22,38 @@ namespace DemoWebApi.Controllers
     [ApiController]
     public class RecipesController : Controller
     {
-        [HttpGet]
-        public ActionResult GetRecipes([FromQuery]int count)
-        {
-            string[] recipes = {"Oxtail", "Curry Chicken", "Dumpling"};
+        private readonly IRecipeDataStore _recipeDataStore;
 
-            if (!recipes.Any())
-            {
-                return NotFound();
-            }
-            return Ok(recipes.Take(count));
+        public RecipesController(IRecipeDataStore recipeDataStore)
+        {
+            _recipeDataStore = recipeDataStore;
         }
 
-        //[HttpPost]
-        //public ActionResult CreateNewRecipes()
-        //{
-        //    bool badThingHappen = false;
+        [HttpGet]
+        public async Task<ActionResult> GetRecipesAsync([FromQuery] int? count)
+        {
+            var recipes = await _recipeDataStore.GetAsync();
+            var response = new ResponseEntity();
+            
+            if (count != null) response.Data = recipes.Take(count.Value);
+            else response.Data = recipes;
 
-        //    string[] recipes = { "Oxtail", "Curry Chicken", "Dumpling" };
+            return Ok(response);
+        }
 
-        //    if (badThingHappen)
-        //    {
-        //        return BadRequest();
-        //    }
+        [HttpPost]
+        public async Task<ActionResult> CreateNewRecipes([FromBody] Recipe newRecipe)
+        {
+            await _recipeDataStore.CreateAsync(newRecipe);
 
-        //    return ;
-        //}
+            var response = new ResponseEntity();
+            return Created("", response);
+        }
 
         [HttpDelete("{id}")]
-        public ActionResult DeleteRecipes(string id)
+        public async Task<ActionResult> DeleteRecipes(string id)
         {
-            bool badThingHappen = false;
-
-            if (badThingHappen)
-            {
-                return BadRequest();
-            }
+            await _recipeDataStore.RemoveAsync(id);
 
             return NoContent();
         }
