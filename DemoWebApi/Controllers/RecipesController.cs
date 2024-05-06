@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using DemoWebApi.Data;
 using DemoWebApi.Models;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -48,6 +49,23 @@ namespace DemoWebApi.Controllers
 
             var response = new ResponseEntity();
             return Created("", response);
+        }
+
+        [HttpPatch("{id}")]
+        public async Task<ActionResult> UpdateRecipe(string id, JsonPatchDocument<Recipe> recipeUpdates)
+        {
+            // this action we can use alternative way by use HTTP.PUT and pass value from body then update only changed value
+            var recipe = await _recipeDataStore.GetAsync(id);
+
+            if(recipe == null)
+            {
+                return NotFound();
+            }
+
+            recipeUpdates.ApplyTo(recipe);
+            await _recipeDataStore.UpdateAsync(id,recipe);
+
+            return NoContent();
         }
 
         [HttpDelete("{id}")]
